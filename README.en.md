@@ -2,62 +2,54 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-> Give text-only models "eyes" — calls the Zhipu GLM vision model (`glm-5.3-flash`) to turn images into detailed descriptions or targeted answers.
-> Built for **DeepSeek Harness (DSH)**; works with any AI coding agent that can run scripts (Claude Code, Codex, ...).
+> **Give GLM-5.3 eyes** — calls its sibling vision model `glm-5.3-flash` to turn images into detailed descriptions or targeted answers.
+> Runs anywhere Python does: DeepSeek Harness (DSH), Claude Code, Codex, plain terminal scripts.
 
-## 🚀 Quick Start (3 steps)
+## Why it's made for GLM-5.3
 
-**1 · Install** (one time)
+- **GLM-5.3 is a text-only flagship**: its API accepts text only — `read_image` is refused, pasting is blocked, and any task involving screenshots/charts/UI images stalls.
+- **GLM-5.3-Flash is the first native multimodal model of the GLM-5 series** (image/video/text/file input), on the **same endpoint with the same API key** — and cheap ($0.15/M input tokens, ~1/10 of the flagship).
+- A natural pair: **GLM-5.3 stays the brain; glm-vision makes GLM-5.3-Flash the eyes.**
 
-```powershell
-git clone https://github.com/fei-DEDE/glm-vision "$env:USERPROFILE\.dsh\skills\glm-vision"
+```
+GLM-5.3 (brain, text-only) ◄──── text description ────┐
+                                                       │
+you (screenshot / copy image) → clipboard/file/URL     │
+        ↓                                              │
+describe_image.py (fetch → base64)                     │
+        ↓                                              │
+GLM-5.3-Flash (eyes, native multimodal) ───────────────┘
 ```
 
-No git? Grab `glm-vision-skill-vX.Y.Z.zip` from [Releases](https://github.com/fei-DEDE/glm-vision/releases), extract, and drop the `glm-vision` folder into `C:\Users\<you>\.dsh\skills\`.
+## 🚀 Quick Start (any environment)
 
-**2 · Make sure you have a Zhipu API key**
+**1 · Get the files**
 
-Configure the z.ai provider once in DSH **Settings → Models** and save the key — the skill reads it automatically. Get a key at [z.ai](https://z.ai).
+```powershell
+git clone https://github.com/fei-DEDE/glm-vision
+```
 
-**3 · Just talk to your AI** (that's all)
+**2 · Set your API key once** (any one of)
+
+- Env var: `VISION_API_KEY` (or `ZAI_API_KEY`)
+- Fill `api_key` in `config.json` (**never commit it**)
+- **DSH users: nothing to do** — the key saved in Settings → Models is picked up automatically
+
+**3 · Talk / run**
 
 | You want | You say / do | What happens |
 |---|---|---|
-| Look at your screen | Screenshot with `Win+Shift+S`, then say **"look at my screenshot"** | Reads the clipboard image |
-| Look at a web image | Right-click → Copy image, say **"check the clipboard"** | Same |
-| Check a fresh download | Say **"look at the newest image in my Downloads"** | Scans the folder |
-| Extract text (OCR) | Say **"transcribe all text in this image"** | Targeted vision query |
-| Analyze an error dialog | Screenshot + **"what does this error mean?"** | Targeted analysis |
-| A specific file | Say **"look at C:\pics\photo.png"** | Reads that path |
+| Look at your screen | `Win+Shift+S`, then **"look at my screenshot"** | Reads the clipboard image |
+| A web image | Right-click → Copy image, **"check the clipboard"** | Same |
+| A fresh download | **"look at the newest image in Downloads"** | Scans the folder |
+| Extract text (OCR) | **"transcribe all text in this image"** | Targeted vision query |
+| An error dialog | Screenshot + **"what does this error mean?"** | Targeted analysis |
 
-> 💡 Text-only models can't paste images in DSH ("current model does not support images") — that's exactly why this skill exists. The **clipboard** entry point bypasses it completely.
+## Per-environment setup
 
-## ✨ Features
-
-- **Four image entry points**: clipboard (`--clipboard`, recommended when pasting is blocked), explicit path/URL, newest file in a folder (`--dir`), DSH attachment store (`--find-latest`)
-- **Zero config**: API key auto-read from the DSH credential store (`ZAI_API_KEY` in `~/.dsh/.credentials.yaml`); env vars or `config.json` also work
-- **Result cache**: identical image + question reused for 1 hour
-- **Auto-resize**: images over Zhipu limits (2000×2000 / 4.5MB) are shrunk with Pillow
-- **Robust reads**: magic-byte format detection, Windows file-lock fallbacks, 429/5xx retries
-
-## 🔍 How it works
-
-```
-you (screenshot / copied image) → clipboard / file
-        ↓
-describe_image.py (fetch → base64 → attach prompt)
-        ↓
-Zhipu API · glm-5.3-flash (native multimodal, same key & endpoint)
-        ↓
-text description → stdout → main model context → answer
-```
-
-Text-only models (e.g. glm-5.3) accept text only; `read_image` is refused and pasting is blocked client-side. A skill cannot change a model's modalities, but it lets the agent **borrow eyes**: a script asks a vision model, and the description text enters the main model's context.
-
-## 📦 Install details
-
-- **DSH**: clone or copy into `~\.dsh\skills\glm-vision\` — auto-discovered, no restart needed.
-- **Other agents**: copy `SKILL.md`, `config.json`, `scripts/` into your skills dir (e.g. `~/.claude/skills/glm-vision/`) and set `VISION_API_KEY` (or fill `config.json` — never commit it).
+- **DeepSeek Harness (DSH)**: clone into `~\.dsh\skills\glm-vision` — auto-discovered, zero config (auto-reads the DSH credential store; also supports scanning the DSH attachment store via `--find-latest`). Note DSH blocks pasting for text-only models — the clipboard entry bypasses it.
+- **Claude Code / other agents**: copy `SKILL.md`, `config.json`, `scripts/` into your skills dir (e.g. `~/.claude/skills/glm-vision/`) and set the key.
+- **Plain CLI**: no agent required (see below).
 
 ## 🛠 CLI usage
 
@@ -68,22 +60,30 @@ python scripts\describe_image.py C:\path\to\img.png https://example.com/x.jpg
 python scripts\describe_image.py --dir "$env:USERPROFILE\Downloads" --list
 ```
 
-stdout is the vision model's answer. More: `--minutes` (window, default 240), `--max` (count, default 5), `--model` / `--base-url` / `--api-key` overrides, `--no-thinking`.
+stdout is GLM-5.3-Flash's answer. More: `--minutes` (window, default 240), `--max` (count, default 5), `--model` / `--base-url` / `--api-key` overrides, `--no-thinking`.
+
+## ✨ Features
+
+Four image entry points (clipboard / path / URL / folder / DSH store) · result cache (1h) · auto-resize over Zhipu limits (2000×2000, 4.5MB) · magic-byte detection · Windows file-lock fallbacks · 429/5xx retries.
 
 ## ⚙️ config.json
 
 | Field | Default | Notes |
 |---|---|---|
-| `base_url` | `https://api.z.ai/api/coding/paas/v4` | Zhipu OpenAI-compatible endpoint; bigmodel.cn → `https://open.bigmodel.cn/api/coding/paas/v4` |
-| `api_key` | empty | Empty = auto-read DSH credential store; otherwise your key (**do not commit**) |
-| `model` | `glm-5.3-flash` | First native multimodal GLM-5 model; try `glm-4.6v` (bigmodel.cn) for max quality |
+| `base_url` | `https://api.z.ai/api/coding/paas/v4` | bigmodel.cn → `https://open.bigmodel.cn/api/coding/paas/v4` |
+| `api_key` | empty | Empty → DSH credential store, else `VISION_API_KEY`/`ZAI_API_KEY` |
+| `model` | `glm-5.3-flash` | First native multimodal GLM-5 model; `glm-4.6v` (bigmodel.cn) for max quality |
 | `thinking` | `true` | Thinking mode |
 
-Env vars `VISION_BASE_URL` / `VISION_API_KEY` / `VISION_MODEL` override config.json.
+## ❓ FAQ
+
+**My client blocks pasting images.** Many clients gate pasting by model capability (DSH does). Use the **clipboard entry**: screenshot or copy the image, then run `--clipboard` — no upload channel involved.
+
+**Only for GLM-5.3?** Built for it, but any text-only model (e.g. DeepSeek-R1) can borrow the same eyes. If your model already accepts images (glm-5.3-flash, glm-4.6v), use native pasting instead.
 
 ## 🙏 Credits
 
-Adapted from [kuohii/vision-describe](https://github.com/kuohii/vision-describe) (original targets Aliyun qwen-vl, MIT License). This fork switches the vision backend to Zhipu GLM and adapts it to DSH's credential store, attachment store, and skill format.
+Adapted from [kuohii/vision-describe](https://github.com/kuohii/vision-describe) (Aliyun qwen-vl original, MIT). This fork switches the vision backend to Zhipu GLM and adapts DSH's credential/attachment stores and skill format.
 
 ## License
 
