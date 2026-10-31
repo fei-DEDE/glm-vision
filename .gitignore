@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.DS_Store
+glm_vision_cache/
+# 若在 config.json 填入了真实 api_key,请取消下一行注释以防误提交
+# config.json

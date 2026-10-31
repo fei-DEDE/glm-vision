@@ -1,0 +1,7 @@
+{
+  "base_url": "https://api.z.ai/api/coding/paas/v4",
+  "api_key": "",
+  "model": "glm-5.3-flash",
+  "thinking": true,
+  "default_prompt": "请详细描述这张图片的内容,包括所有可见的文字(逐字转录)、物体、布局、颜色和重要细节。"
+}
