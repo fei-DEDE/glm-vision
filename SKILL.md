@@ -3,15 +3,15 @@ name: glm-vision
 description: 让纯文本模型(如 glm-5.3)也能"看图":调用智谱 GLM 视觉模型(glm-5.3-flash)把图片转成详细文字描述,或回答针对图片的问题(OCR、截图/图表/UI/报错图分析)。当 read_image 报 "does not declare image input"、用户贴图被拒("当前模型不适合放图片")、用户让看剪贴板/截图/图片路径、或要求识图时使用。
 whenToUse: 当前模型不支持图像输入却需要理解图片内容时。图片四条入口:剪贴板(--clipboard,贴图被拒时首选)、明确路径/URL、文件夹最新图(--dir)、DSH 附件库(--find-latest)。
 metadata:
-  version: "1.1.0"
-  author: adapted from kuohii/vision-describe (qwen-vl) for Zhipu GLM + DSH
+  version: "1.2.0"
+  author: adapted from kuohii/vision-describe (qwen-vl) for Zhipu GLM (made for glm-5.3)
 ---
 
 # glm-vision
 
-让纯文本模型也能"看图":调用智谱 GLM 视觉模型(默认 `glm-5.3-flash`,与 glm-5.3 同系列、同一 API key),把图片内容转成文字描述或回答针对图片的问题。API key 自动从 DSH 凭据库(`~/.dsh/.credentials.yaml` 的 `ZAI_API_KEY`)读取,零配置。
+给 **GLM-5.3**(及其他纯文本模型)装上眼睛:调用同门视觉模型 `glm-5.3-flash`(同一端点、同一把 API key)把图片内容转成文字描述或回答问题。GLM-5.3 继续当大脑,本技能让 GLM-5.3-Flash 当眼睛。适用于任何能跑 Python 的 agent 环境;在 DSH 中额外零配置——API key 自动从 DSH 凭据库(`~/.dsh/.credentials.yaml` 的 `ZAI_API_KEY`)读取,其他环境用 `VISION_API_KEY`/`ZAI_API_KEY` 环境变量或 config.json。
 
-**重要背景**:DSH 客户端会阻止纯文本模型贴图(提示"当前模型不适合放图片"),这是客户端行为,无法在技能层解除。所以本技能的图片入口不依赖 DSH 的贴图通道。
+**重要背景**:纯文本模型的贴图会被不少客户端拦截(DSH 提示"当前模型不适合放图片"),这是客户端行为,无法在技能层解除。所以本技能的图片入口不依赖任何贴图通道。
 
 ## 何时使用(自动触发)
 
@@ -24,7 +24,7 @@ metadata:
 
 ## 用法
 
-Python 用 `load_workspace_dependencies` 返回的(自带 Pillow,剪贴板/压缩需要);脚本位于本技能目录 `scripts/describe_image.py`:
+Python 3.9+(剪贴板/压缩需 Pillow):DSH 里优先用 `load_workspace_dependencies` 返回的 Python(自带 Pillow);其他环境用任意装了 Pillow 的 Python。脚本位于本技能目录 `scripts/describe_image.py`:
 
 ```powershell
 # 首选:读剪贴板(用户截图 Win+Shift+S / 网页右键复制图片 / 资源管理器复制图片文件后)
